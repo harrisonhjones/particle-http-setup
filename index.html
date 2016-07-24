@@ -1,0 +1,374 @@
+<HTML>
+<HEAD>
+
+
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+
+  
+
+
+
+  <script src="js/softap-browser-min.js"></script>
+  <SCRIPT>
+
+  var sap = new SoftAPSetup({ protocol: 'http' });
+  var stage = 0
+  var state = 0; 
+
+  var foundNetworks = [];
+
+  function btnLookingForDevice() {
+    message = 'Searching for device';
+
+    var originalMessage = message;
+
+    for (var i = 0; i < stage; i++) {
+      message += '.';
+    };
+
+    if(stage > 3)
+    {
+      stage = 0;
+    }
+    else
+    {
+      stage++;
+    }
+
+    console.log('Button wait. Message: ' + message);
+
+    $('#btnSearchForDevice').html(message);
+
+    // window.setTimeout(buttonWait('#btnSearchForDevice', 'Looking for device'), 250);
+  }
+
+  function searchForDevice() {
+    stage = 0;
+
+    if(state != 0) {
+      console.log('BAD STATE - Search for Device called with a state of ' + state + '. State should be 0');
+      return;
+    }
+
+    noAlert();
+
+    timeoutID = window.setInterval(btnLookingForDevice, 500);
+
+    $('#btnSearchForDevice').addClass('btn-default');
+    $('#btnSearchForDevice').addClass('disabled');
+    $('#btnSearchForDevice').removeClass('btn-success');
+
+    sap.deviceInfo(callback);
+    function callback(err, dat) {
+        if (err) { 
+          console.log(err.message);
+          alert('Unable to find to your device. Are you sure you are connected to the "Photon-XXXX" WiFi network?');
+
+          $('#btnSearchForDevice').removeClass('btn-default');
+          $('#btnSearchForDevice').addClass('btn-success');
+          $('#btnSearchForDevice').html('Search for Device');
+          $('#btnSearchForDevice').removeClass('disabled');
+
+        } else {
+          state = 1;
+          console.log('Device ID: %s, claimed: %s', dat.id, dat.claimed ? 'yes' : 'no');
+        }        
+        clearInterval(timeoutID);
+    };
+  }
+
+  function btnScanningWiFiNetworks() {
+    message = 'Scanning for WiFi Networks';
+
+    var originalMessage = message;
+
+    for (var i = 0; i < stage; i++) {
+      message += '.';
+    };
+
+    if(stage > 3)
+    {
+      stage = 0;
+    }
+    else
+    {
+      stage++;
+    }
+
+    console.log('Button wait. Message: ' + message);
+
+    $('#btnScanForWiFi').html(message);
+
+    // window.setTimeout(buttonWait('#btnSearchForDevice', 'Looking for device'), 250);
+  }
+
+  function scanForWiFiNetworks() {
+    stage = 0;
+    /*if(state != 1) {
+      console.log('BAD STATE - Scan for WiFi called with a state of ' + state + '. State should be 1');
+      return;
+    }*/
+    noAlert();
+
+    timeoutID = setInterval(btnScanningWiFiNetworks, 500);
+
+    sap.scan(callback);
+    function callback(err, dat) {
+        if(err) { 
+          alert('Unable to scan for WiFi networks. You must input network information manually.');
+        }
+
+        $('#btnScanForWiFi').removeClass('btn-default');
+        $('#btnScanForWiFi').addClass('btn-success');
+        $('#btnScanForWiFi').html('Scan for WiFi Networks');
+        $('#btnScanForWiFi').removeClass('disabled');
+
+        console.log("Networks Identified:");
+        console.log(dat);
+        clearInterval(timeoutID);
+
+        if(dat) {
+          for (var i = 0; i < dat.scans.length; i++) {
+            foundNetworks[i] = {ssid: dat.scans[i].ssid, securityType: dat.scans[i].sec, channel: dat.scans[i].ch};
+
+            addTableRow(i, dat.scans[i].ssid, sap.securityLookup(dat.scans[i].sec), dat.scans[i].ch);
+          };
+        }
+    };
+  }
+
+  function setNetwork(rowNumber) {
+    var configuration = {};
+
+    if(rowNumber == 'manual') {
+      configuration.ssid = $('#' + rowNumber + '_ssid').val();
+      configuration.security = $('#' + rowNumber + '_security').val();
+      configuration.password = $('#' + rowNumber + '_password').val();
+      configuration.channel = $('#' + rowNumber + '_channel').val();
+
+    } else {
+      configuration.ssid = foundNetworks[rowNumber].ssid;
+      configuration.security = foundNetworks[rowNumber].securityType;
+      configuration.password = $('#' + rowNumber + '_password').val();
+      configuration.channel = foundNetworks[rowNumber].channel;
+    }
+
+    console.log(configuration);
+  }
+
+
+  function alert(message) {
+    $('#divAlert').html(message);
+    $('#divAlert').removeClass('hidden');
+    $('#divAlert').addClass('show');
+  }
+
+  function noAlert() {
+    $('#divAlert').addClass('hidden');
+    $('#divAlert').removeClass('show');
+  }
+
+  function addTableRow(rowNum, c1, c2, c3) {
+    //$('#tblFoundWiFiNetworks').find('tbody:last').append('<tr><td>' + c1 + '</td><td>' + c2 + '</td></tr>');
+    $('#tblFoundWiFiNetworks').append('<tr><td>' + c1 + '</td><td>' + c2 + '</td><td><input id="' + rowNum + '_password" placeholder="password" /></td><td>' + c3 + '<td><a href="#" onclick="setNetwork(\'' + rowNum + '\');" class="btn btn-success">Use Network</a></td></tr>');
+  }
+  </SCRIPT>
+
+</HEAD>
+
+<BODY>
+
+</BODY>
+</HTML>
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Cover Template for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <!--<link href="../../dist/css/bootstrap.min.css" rel="stylesheet">-->
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!--<link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">-->
+
+    <!-- Custom styles for this template -->
+    <link href="css/cover.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <!--<script src="../../assets/js/ie-emulation-modes-warning.js"></script>-->
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="site-wrapper">
+
+      <div class="site-wrapper-inner">
+
+        <div class="cover-container">
+
+          <div class="masthead clearfix"  >
+            <div class="inner">
+              <h3 class="masthead-brand">Particle Web Setup</h3>
+              <nav>
+                <ul class="nav masthead-nav">
+                  <li class="active"><a href="#">Setup</a></li>
+                  <li><a href="#">Features</a></li>
+                  <li><a href="#">About</a></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+          <div id="divAlert" class="alert alert-danger hidden" role="alert"></div>
+
+          <div id="divStateOne" class="inner cover">
+            <h1 class="cover-heading">Connect to your Device.</h1>
+            <p class="lead">The first step here is to connect to your device. To continue, power up your device, place it in <a href="https://docs.particle.io/guide/getting-started/modes/photon/#listening-mode" style="text-decoration: underline;">Listening Mode</a> (flashing blue), and then connect to your device's wireless network. It'll be something like "Photon-XXXX". Once connected click the button below.</p>
+            <p class="lead">
+              <a id="btnSearchForDevice" href="#" onclick="searchForDevice()" class="btn btn-lg btn-success">Search for Device</a>
+            </p>
+          </div>
+
+          <div id="divStateTwo" class="inner cover">
+            <h1 class="cover-heading">Scan for WiFi Networks.</h1>
+            <p class="lead">I have found your device! Your device's device ID is <b>DEVICE ID</b>. Copy that number somewhere safe. Now, the next step is to configure the WiFi settings on your device. First you must select a network for your device to connect to. Click the button below to initiate the WiFi network scan from your device.</p>
+            <p class="lead">
+              <a id="btnScanForWiFi" href="#" onclick="scanForWiFiNetworks()" class="btn btn-lg btn-success">Scan for Wifi Networks</a>
+            </p>
+          </div>
+
+          <div id="divStateThree" class="inner cover">
+            <h1 class="cover-heading">Select WiFi Network.</h1>
+            <p class="lead">I have found the following WiFi networks. Select the correct network by find the correct network, fill out the 'password' field (if applicable), and then press the 'Use Network' button.</p>
+            <p>
+              <h2>Found WiFI Networks</h2>
+              <table id="tblFoundWiFiNetworks" class="table table-condensed text-center">
+                
+                <tr>
+                  <th class="text-center">SSID</th></th>
+                  <th class="text-center">Security</th>
+                  <th class="text-center">Password</th>
+                  <th class="text-center">Channel</th>
+                  <th class="text-center">Action</th>
+                </tr>
+                <tr>
+                  <td><input id="manual_ssid" placeholder="SSID" /></td>
+                  <td>
+
+                    <select id="manual_security" class="form-control">
+                      <option>open</option>
+                      <option>wep_psk</option>
+                      <option>wep_shared</option>
+                      <option>wpa_tkip</option>
+                      <option>wpa_aes</option>
+                      <option>wpa2_tkip</option>
+                      <option>wpa2_aes</option>
+                      <option>wpa_mixed</option>
+                      <option>wpa</option>
+                    </select>
+
+                  </td>
+                  <td><input id="manual_password" placeholder="password" /></td>
+                  <td>
+
+                    <select id="manual_channel" class="form-control">
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4</option>
+                      <option>5</option>
+                      <option>6</option>
+                      <option>7</option>
+                      <option>8</option>
+                      <option>9</option>
+                      <option>10</option>
+                      <option>11</option>
+                    </select>
+
+                  </td>
+                  <td><a href="#" onclick="setNetwork('manual');" class="btn btn-success">Use Network</a></td>
+                </tr>
+              </table>
+            </p>
+          </div>
+
+          <div>
+            <div class="inner">
+              <p>Created by <a href="https://github.com/harrisonhjones/">Harrison Jones</a> for <a href="https://particle.io">Particle.io</a></p>
+
+              <p>Cover template for <a href="http://getbootstrap.com">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>.</p>
+
+            </div>
+          </div>
+
+        </div>
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam scelerisque gravida accumsan. In rutrum, tortor nec pulvinar semper, sapien lacus fringilla tortor, at tempus sapien ante vitae diam. Etiam vestibulum sapien semper, lacinia libero quis, porttitor nisl. Aliquam mollis enim et elit ultrices eleifend. Fusce vestibulum pulvinar metus sit amet maximus. Maecenas molestie suscipit dolor a pulvinar. Sed consectetur, dui nec feugiat blandit, diam risus consectetur eros, vel sagittis dui tortor eu eros. Nullam ut luctus nisl. Cras vehicula tellus a velit ultricies, in finibus mi rutrum. Nulla facilisi. Donec congue nunc vel cursus commodo. Nam purus velit, gravida eget posuere eget, imperdiet quis dolor.
+
+Vivamus massa mi, ultricies quis suscipit id, ullamcorper nec dui. Nunc leo nulla, vestibulum imperdiet dictum at, feugiat a dolor. Mauris efficitur lobortis lacinia. Nulla mollis purus tincidunt erat dignissim vestibulum. Integer libero lectus, lobortis vel semper in, tempor auctor nulla. Cras mollis eros nec condimentum luctus. Suspendisse eget ligula ut nibh pellentesque molestie sit amet at tellus. Nullam id sodales sapien, vel accumsan ante. Integer at fringilla purus, a hendrerit sapien. Aenean interdum, ipsum vel hendrerit gravida, nisi sapien eleifend sem, id sodales elit quam eget diam. Vestibulum elementum tincidunt risus. Nam rhoncus, erat vitae eleifend blandit, massa massa iaculis tellus, vestibulum posuere tellus metus ut nisl. Morbi vulputate arcu ex, vitae porta lorem laoreet a. Praesent sit amet purus consectetur, lacinia nunc sit amet, laoreet urna. Sed nunc neque, viverra id pulvinar nec, malesuada ac turpis. Sed efficitur lacinia est vitae tincidunt.
+
+Maecenas placerat congue vehicula. Quisque fringilla ullamcorper massa quis dignissim. Phasellus ac sem in lacus efficitur volutpat ac ac sem. Vivamus aliquet ipsum sit amet bibendum consectetur. Ut nisl risus, pharetra eget ultricies quis, aliquet eu eros. Cras nunc nulla, pretium ut sollicitudin volutpat, placerat quis arcu. Suspendisse potenti.
+
+Cras a pulvinar tortor. Duis sollicitudin felis nunc, id venenatis ipsum elementum vel. Phasellus neque ipsum, rutrum in libero ac, consequat vehicula enim. Morbi sed felis commodo, posuere mauris id, pretium enim. Donec sed mollis erat. Sed in malesuada leo. Curabitur volutpat mauris non justo vulputate pellentesque. Cras aliquam lobortis ex sit amet venenatis. Donec eget aliquam arcu, et gravida magna.
+
+Donec tristique leo vitae mi consectetur ornare. Proin auctor est vel diam aliquam, sit amet tincidunt felis efficitur. Vivamus mollis ante ac erat egestas dignissim. Ut viverra vulputate diam dignissim malesuada. Sed at aliquam felis. Nullam eget turpis quis lectus volutpat consequat. Mauris a urna enim. Mauris a ipsum elit. Donec sed mauris erat. Nullam vitae urna maximus, porta nulla ut, fringilla nisl.
+
+Vestibulum fermentum id lectus vitae condimentum. Pellentesque pharetra dolor at erat finibus, at auctor erat congue. Ut mattis, arcu in blandit viverra, lectus nisi mollis diam, sit amet consectetur velit quam et turpis. In semper vulputate nunc, at hendrerit eros ullamcorper sit amet. Nullam egestas massa felis, et ornare orci blandit ac. Vestibulum quis porttitor dui. Vivamus sollicitudin congue turpis, non pellentesque neque placerat et. Integer pellentesque magna id massa lobortis, at semper neque sodales. Nulla nec velit efficitur sapien tempus ultrices. Integer eu turpis non erat molestie lobortis. Donec orci velit, condimentum sit amet leo ac, pellentesque aliquet ex. Vestibulum dui metus, cursus quis nisi sit amet, tristique eleifend libero.
+
+Pellentesque nec tortor dolor. Nam eleifend placerat est, sit amet efficitur elit commodo a. Nulla aliquet tellus sit amet posuere consequat. Ut eros lacus, pretium nec dui vel, suscipit lacinia nunc. Proin ac dolor sit amet massa lacinia elementum. Donec eget enim dui. In tincidunt et elit eu auctor. Aliquam vel libero et diam vulputate tempor. Nullam elementum euismod ex, ut rutrum diam. Phasellus sit amet sem ultricies, pretium purus tempus, sagittis nisl.
+
+Nam malesuada metus fringilla tellus placerat, at porttitor ante condimentum. Maecenas consectetur metus non tellus porta, non pretium quam venenatis. Sed rutrum aliquet eros. Donec tincidunt urna et risus viverra ornare ut non felis. Sed sagittis mi quis turpis ultrices viverra. In sit amet nibh non orci eleifend tempor in et eros. Vivamus non pulvinar nibh. Aliquam ut ante a metus finibus blandit. Suspendisse quis lectus diam. Morbi eu nulla et mauris fermentum tristique id quis felis. Curabitur in rutrum enim, et vulputate risus. Nam eu dolor consectetur quam malesuada suscipit nec in lorem. Quisque interdum dui eget nisl suscipit, at sollicitudin quam ullamcorper. Pellentesque massa neque, malesuada at laoreet et, vehicula nec ante. Aliquam gravida mattis venenatis.
+
+Donec ut felis mauris. Maecenas euismod in nulla vitae congue. Cras risus nisl, laoreet eget nisl sed, lobortis pretium arcu. Cras maximus quam nisi, pharetra pretium felis ultrices congue. Donec congue pharetra massa, non interdum lectus suscipit id. Morbi justo nunc, accumsan at dapibus id, lacinia eget nisi. Mauris euismod tortor vitae leo condimentum, sit amet aliquet enim lacinia.
+
+Nullam id turpis ac leo blandit vulputate. Donec auctor iaculis efficitur. Sed non leo et erat facilisis varius pretium ut mauris. Integer non felis sollicitudin, fringilla mauris vitae, porttitor dui. Nulla vestibulum ipsum id lacus venenatis, dapibus commodo elit ullamcorper. Aliquam non efficitur odio. Aliquam tincidunt enim sit amet sagittis gravida. Donec tempus magna vel rhoncus varius. Nullam dapibus vel velit vel mollis. Praesent lectus massa, finibus id ultrices quis, faucibus at ligula. Nunc sed ex leo. Etiam semper tincidunt justo, a egestas urna commodo et. Aenean malesuada congue velit, quis sollicitudin urna blandit non. Maecenas bibendum pharetra nulla at gravida.
+
+Ut tristique urna a pharetra vehicula. Aenean feugiat volutpat neque, sit amet euismod nulla imperdiet at. Fusce dignissim gravida velit eget placerat. Ut elit sem, consectetur facilisis tincidunt ut, mattis non nisl. Donec nulla augue, malesuada id tellus in, sollicitudin tempus dolor. Aliquam laoreet massa non purus tristique, id efficitur felis cursus. Nunc elementum ipsum nec efficitur congue. Suspendisse malesuada molestie nulla, non maximus diam lobortis vitae. Fusce at sodales sem. Etiam mollis convallis euismod. In gravida, odio eget scelerisque vestibulum, urna massa tincidunt sem, et tempor eros eros eu libero. Donec eu magna dictum, ultricies mauris quis, volutpat nulla.
+
+Quisque in augue eget ex molestie condimentum. Suspendisse sit amet eleifend eros. Duis hendrerit, quam eget pulvinar fermentum, urna tellus finibus tellus, ut egestas enim tellus porta lorem. In vel velit a sapien finibus aliquet. Nulla vitae vulputate leo. Nam in pretium nunc. Donec egestas semper nibh, vel lacinia arcu luctus sit amet. Maecenas in odio leo. Nulla facilisi. In nec neque vel lorem consequat dignissim.
+
+Donec vestibulum tortor et viverra vulputate. Maecenas id molestie neque. Curabitur vitae nisi dui. Aliquam ut nibh porttitor nisi varius accumsan ac sed quam. Aenean varius a erat euismod pharetra. Vivamus a ante a elit placerat condimentum non sed magna. Suspendisse lacinia ultrices magna non sagittis.
+
+Praesent dapibus purus at est cursus elementum. Cras posuere, mauris eget consectetur cursus, massa dolor pellentesque diam, efficitur vehicula ex ligula ac nulla. Sed scelerisque, eros eget sodales auctor, sem dui lacinia justo, sed sollicitudin nulla tellus imperdiet risus. Ut et odio vitae elit sodales convallis sit amet id tortor. Nullam posuere maximus dolor et tempus. Proin accumsan, nulla a pretium venenatis, orci felis blandit odio, quis laoreet tortor enim eu purus. Mauris tempus, dolor a sagittis faucibus, est lectus molestie nibh, eu porttitor diam elit sit amet ligula. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Lorem ipsum dolor sit 
+
+      </div>
+
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    
+    <!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+    <script src="../../dist/js/bootstrap.min.js"></script>
+    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+    -->
+    
+    <script src="js/jquery-2.2.4.min.js"></script>
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="js/bootstrap.min.js"></script>
+  </body>
+</html>
